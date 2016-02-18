@@ -5,20 +5,31 @@
 	<title>Marvel API project</title>
 	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" type="text/css">
 	<style>
+		h1 { margin:50px 0; }
 		h2 { text-align: center; }
-		section { height: 450px; }
 		@media (min-width: 970px) {
 			img { height:250px !important; }
+			section { height: 450px; }
+		}
+		@media (max-width: 970px) {
+			.container { margin:15px; }
 		}
 	</style>
 </head>
 <body>
+	<header>
+		<h1 class="text-center">Marvel Characters</h1>
+	</header>
 
 	<div class="container">
+	    <form class="row">
+					<div>
+						<input>
+						<button>search!</button>
+					</div>
+	    </form>
+
 	    <div class="row">
-	        <div class="text-center">
-	            <h1>Marvel Characters</h1>
-	        </div>
 					<div id="characters" class="row">
 					</div>
 	    </div>
@@ -27,6 +38,7 @@
 
 	<script src="https://code.jquery.com/jquery-2.2.0.js"></script>
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+	<script src="config.js"></script>
 	<script>
 
 		/*
@@ -35,38 +47,76 @@
 				- Add "localhost" as an authorised domain for your API_KEY
 				- Accesing this page from "http://localhost" (using a local server)
 		*/
-		var API_KEY = "";
 
-		var limit = 50;
-		var offset = 6;
-		var urlApiMarvel = "http://gateway.marvel.com/v1/public/characters?apikey=" + API_KEY
-		urlApiMarvel += '&limit=' + limit
-		urlApiMarvel += offset ? '&offset=' + (limit*offset) : ""
+		var API_KEY = API_KEY || "";
 
+		var limit = 100;
+		var offset = 1;
+		var aMarvelData = [];
+		var sData, aData;
 
+		var sImgTag, sTitleTag;
+		var sOpenCell = '<section class="col-md-4"><div class="well">';
+		var sTitleTemplate = '<h3><%TITLE%></h3>';
+		var sImgTemplate = '<img class="thumbnail img-responsive" alt="Bootstrap template" src="<%URL-IMG%>" />'
+		var sCloseCell = '</div></section>';
+		var aCells = [];
 
-		$.ajax({
-			url: urlApiMarvel,
-			success: function( oJsonData ) {
-				var aCharacters = oJsonData.data.results;
-				var oCurrentCharacter;
-				var sImgTag, sTitleTag;
-				var sOpenCell = '<section class="col-md-4"><div class="well">';
-				var sTitleTemplate = '<h3><%TITLE%></h3>';
-				var sImgTemplate = '<img class="thumbnail img-responsive" alt="Bootstrap template" src="<%URL-IMG%>" />'
-				var sCloseCell = '</div></section>';
-				var aCells = [];
+		var fromShow = 500, toShow = 700;
 
-				$.each (aCharacters, function(index, oCurrentCharacter){
-					oImg = oCurrentCharacter.thumbnail;
-					sImgTag = sImgTemplate.replace("<%URL-IMG%>",oImg.path+"."+oImg.extension);
-					sTitleTag = sTitleTemplate.replace("<%TITLE%>",oCurrentCharacter.name);
-					aCells.push( sOpenCell + sTitleTag + sImgTag + sCloseCell );
-				})
+		if (localStorage.getItem('marvelData') ) {
+			sData = localStorage.getItem('marvelData');
+			aData = JSON.parse(sData);
+		}
 
-				$("#characters").html( aCells.join("") )
+		else  {
+			(function loadDataFromMarvel( offset ) {
+
+				var urlApiMarvel = "http://gateway.marvel.com/v1/public/characters?apikey=" + API_KEY
+				var query = $("form input").val();
+
+				urlApiMarvel += '&limit=' + limit
+				urlApiMarvel += query ? '&nameStartsWith=' + query : "";
+
+				if (offset<15) {
+					urlApiMarvel += offset ? '&offset=' + (limit*offset) : ""
+					$.ajax({
+						url: urlApiMarvel,
+						success: function( oJsonData ) {
+							// store only names
+							var aCharacters = oJsonData.data.results;
+							$.each (aCharacters, function(index, oCurrentCharacter){
+								var oImg = oCurrentCharacter.thumbnail;
+								aMarvelData.push({
+									name: oCurrentCharacter.name,
+									img: oImg.path+"."+oImg.extension
+								});
+							});
+							offset++;
+							loadDataFromMarvel(offset);
+						}
+					})
+				}
+				else {
+					sMarvelData = JSON.stringify(aMarvelData);
+					localStorage.setItem('marvelData', sMarvelData);
+					sData = localStorage.getItem('marvelData');
+					aData = JSON.parse(sData);
+				}
+			})(offset)
+
+		}
+
+		// create tags and insert html
+		$.each (aData, function( index, oCurrentCharacter ){
+			if ( (index>fromShow) && (index<toShow) ) {
+				sImgTag = sImgTemplate.replace("<%URL-IMG%>",oCurrentCharacter.img);
+				sTitleTag = sTitleTemplate.replace("<%TITLE%>",oCurrentCharacter.name);
+				aCells.push( sOpenCell + sTitleTag + sImgTag + sCloseCell );
 			}
 		})
+
+		$("#characters").html( aCells.join("") )
 
 	</script>
 </body>
