@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Marvel API project</title>
+	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+	<style>
+		h2 { text-align: center; }
+		section { height: 450px; }
+		@media (min-width: 970px) {
+			img { height:250px !important; }
+		}
+	</style>
+</head>
+<body>
+
+	<div class="container">
+	    <div class="row">
+	        <div class="text-center">
+	            <h1>Marvel Characters</h1>
+	        </div>
+					<div id="characters" class="row">
+					</div>
+	    </div>
+	</div>
+
+
+	<script src="https://code.jquery.com/jquery-2.2.0.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+	<script>
+
+		/*
+			To make it work locally you have to:
+				- Get your own API_KEY from http://developer.marvel.com/
+				- Add "localhost" as an authorised domain for your API_KEY
+				- Accesing this page from "http://localhost" (using a local server)
+		*/
+		var API_KEY = "";
+
+		var limit = 50;
+		var offset = 6;
+		var urlApiMarvel = "http://gateway.marvel.com/v1/public/characters?apikey=" + API_KEY
+		urlApiMarvel += '&limit=' + limit
+		urlApiMarvel += offset ? '&offset=' + (limit*offset) : ""
+
+
+
+		$.ajax({
+			url: urlApiMarvel,
+			success: function( oJsonData ) {
+				var aCharacters = oJsonData.data.results;
+				var oCurrentCharacter;
+				var sImgTag, sTitleTag;
+				var sOpenCell = '<section class="col-md-4"><div class="well">';
+				var sTitleTemplate = '<h3><%TITLE%></h3>';
+				var sImgTemplate = '<img class="thumbnail img-responsive" alt="Bootstrap template" src="<%URL-IMG%>" />'
+				var sCloseCell = '</div></section>';
+				var aCells = [];
+
+				$.each (aCharacters, function(index, oCurrentCharacter){
+					oImg = oCurrentCharacter.thumbnail;
+					sImgTag = sImgTemplate.replace("<%URL-IMG%>",oImg.path+"."+oImg.extension);
+					sTitleTag = sTitleTemplate.replace("<%TITLE%>",oCurrentCharacter.name);
+					aCells.push( sOpenCell + sTitleTag + sImgTag + sCloseCell );
+				})
+
+				$("#characters").html( aCells.join("") )
+			}
+		})
+
+	</script>
+</body>
+</html>
